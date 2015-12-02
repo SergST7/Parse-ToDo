@@ -1,0 +1,169 @@
+body {
+    text-align: center;
+    font-family: 'Alegreya Sans', sans-serif;
+}
+.wrapper{
+    max-width: 700px;
+    margin: 0 auto;
+    background: #bed0ee;
+    padding: 5px;
+    font-style: italic;
+}
+
+a {
+    text-decoration: none;
+}
+
+.filter-wrap{
+    margin-top: 30px;
+}
+
+#manage-task{
+    padding:20px;
+}
+
+.done-all-wrap{
+    text-align: left;
+}
+
+.button { border-top: 1px solid #96d1f8;
+    display: inline-block;
+    background: #65a9d7;
+    background: -webkit-gradient(linear, left top, left bottom,
+    from(#3e779d), to(#65a9d7));
+    background: -moz-linear-gradient(top, #3e779d, #65a9d7);
+    padding: 5px 18px;
+   // -webkit-border-radius: 10px;
+  //  -moz-border-radius: 10px;
+    border-radius: 10px;
+   // -webkit-box-shadow: rgba(0,0,0,1) 0 1px 0;
+  //  -moz-box-shadow: rgba(0,0,0,1) 0 1px 0;
+    box-shadow: rgba(0,0,0,1) 0 1px 0;
+    text-shadow: rgba(0,0,0,.4) 0 1px 0;
+    color: white;
+    font-size: 15px;
+    font-family: Helvetica, Arial, Sans-Serif;
+    font-style: normal;
+    text-decoration: none;
+    vertical-align: middle;
+}
+.button:hover {
+    border-top-color: #28597a;
+    background: #28597a;
+    color: #ccc;
+}
+.button:active {
+    border-top-color: #1b435e;
+    background: #1b435e;
+}
+
+form{
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 15px;
+  //  border: 1px solid red;
+
+}
+.form-input{
+    text-align: right;
+    padding-right: 35px;
+}
+
+.target-done {
+    color: red;
+    text-decoration: line-through;
+}
+
+#main {
+    max-width: 700px;
+    margin: auto;
+    text-align: left;
+    background: url(../img/9.jpg) no-repeat;
+    background-size: cover;
+    //background: white;
+    //padding: 20px 10px;
+    border: solid #ddd;
+    border-width: 0 1px 1px 1px;
+}
+
+#main h1 {
+    margin-top: 0;
+    font-size: 35px;
+}
+
+#main ol {
+    padding: 20px 30px;
+    list-style-position: inside;
+}
+#main li:nth-child(odd) {
+   // background-color: #c7ffe1;
+}
+#main li:nth-child(even) {
+   // background-color: #ffffdf;
+
+}
+
+#main li {
+    height: 34px;
+    overflow: hidden;
+    font-size:18px;
+    line-height:34px;
+    border-bottom: 1px solid navy;
+}
+.share-task-btn{
+    background: url(../img/peer-to-peer-icon.png) no-repeat;
+}
+.edit{
+    background: url(../img/edit-icon1.png) no-repeat;
+}
+.btn-delete{
+    background: url(../img/delete-icon1.png) no-repeat;
+}
+.edit-confirm{
+    background: url(../img/ok-icon.png) no-repeat;
+}
+#main li input[type="button"]{
+    float: right;
+    width: 34px;
+    height: 34px;
+    border:none;
+    opacity: 0;
+    padding: 2px 2px;
+    margin-right: 5px;
+}
+
+#main li:hover input[type="button"]{
+    opacity: 0.4;
+    transition: all 0.4s ease-out 0.1s;
+
+}
+
+#main li input[type="button"]:hover{
+    opacity: 1;
+}
+
+#main li a{
+    float: right;
+    text-decoration: none;
+    background-color: indianred;
+}
+
+#add-new-task{
+    margin: 20px auto;
+}
+
+.sharedFor label::after{
+    position: relative;
+    content: url(../img/16px-share.png);
+    top:3px;
+    left: 7px;
+}
+
+.error-msg{
+    background-color: red;
+    color: white;
+    padding:5px;
+    margin: 5px;
+    font-style: italic;
+    display: inline-block;
+}
