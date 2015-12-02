@@ -29,7 +29,6 @@
             </p>
         </div>
 
-
         <form action="" id="login">
             <h2>Авторизация</h2>
 
@@ -48,20 +47,20 @@
             <p>Еще не зарегестрированы? <a href="#" class="showreg button">регистрация</a></p>
         </form>
 
-
         <form action="" id="signup">
             <h2>Регистрация нового пользователя</h2>
-
             <p class="form-input">
-                Имя пользователя: <input type="text" id="signup-username" placeholder="User name" required/>
+                <label for="signup-username">Имя пользователя:</label>
+                <input type="text" id="signup-username" placeholder="User name" required/>
             </p>
-
             <p class="form-input">
-                Пароль: <input type="password" id="signup-password" placeholder="Password" required/>
+                <label for="signup-password">Пароль:</label>
+                <input type="password" id="signup-password" placeholder="Password" required/>
             </p>
-
-            <p class="form-input">E-mail: <input type="email" id="signup-email" placeholder="e-mail" required/></p>
-
+            <p class="form-input">
+                <label for="signup-email">E-mail:</label>
+                <input type="email" id="signup-email" placeholder="e-mail" required/>
+            </p>
             <p>
                 <a href="#" id="signup-submit" class="button" value=""> Sign Up</a>
                 <a href="#" id="signup-back"  class="button"  value="" >Cancel</a>
@@ -81,7 +80,6 @@
 
     <div id='manage-task'>
         <div class="done-all-wrap">
-
         <input type="checkbox" id="done-all"/>
         <label for="done-all">Отметить все</label>
         </div>
