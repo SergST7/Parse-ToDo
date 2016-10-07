@@ -18,8 +18,7 @@
     App.Models.Task = Parse.Object.extend('Task', {
         defaults: {
             shared: false,
-            done: false,
-            user: ''
+            done: false
         },
         validate: function (attrs) {
             if (!($.trim(attrs.title))) {
@@ -49,20 +48,28 @@
             'click .edit-confirm': 'editConfirm',
             'click .share-task-btn': 'shareTask', //расшарить задачу по е-мейлу
             'click .done-toggle': 'toggleDone',
-            'click .delete': 'delete'
+            'click .delete': 'delete',
+            'swipeleft' : 'animate'               //свайп с помощью hammer + jquery
         },
 
         //вешаем слушателей на изменение и удаление модели
         initialize: function () {
+           //this.$el.addSwipeEvents().bind('swipeleft', this.delete.bind(this)); //свайп с помощью jquery.doubletup
+
+            this.$el.hammer();                 //свайп с помощью hammer + jquery
+
             this.model.on('change', this.render, this);
             this.model.on('destroy', this.remove, this);
+            this.$el.on('transitionend', this.transType.bind(this));
             vent.on('filterDone', this.filterDone, this);     //события на фильтры, генерируются роутером
             vent.on('filterAll', this.filterAll, this);
             vent.on('filterActive', this.filterActive, this);
+
         },
 
         render: function () {
             this.$el.html(this.template(this.model.toJSON()));
+
             this.doneClassSet();    //перечеркиваем выполненные задания
             this.sharedClassSet();  // добывим иконку к шаренным
             return this
@@ -151,10 +158,23 @@
             if (this.model.get('done'))
                 this.$el.hide();
         },
+
+        transType: function(e){
+            console.log(e.originalEvent.propertyName );
+            if (e.originalEvent.propertyName == 'right') {       //удаляем элемент если событие cмена позиции в право
+                this.delete();
+            }
+        },
+
+        animate: function(){
+            this.$el.css({'right':'1000px', 'height':'0'});
+        },
+
         //удаляем модель
         delete: function () {
             this.model.destroy();
-            console.log('модель удалена')
+            console.log('модель удалена');
+           // console.log(this.model)
         },
 
         //удаляем элемент модели из DOM
@@ -169,6 +189,7 @@
 
         initialize: function () {
             vent.on('login', this.getElements, this);         //при успешном логине выполняем запрос заданий с сервера
+           // this.getElements();
         },
 
         getDoneArr: function () {
@@ -202,21 +223,22 @@
 
 //конструктор вьюхи для коллекции задач
     App.Views.TasksCollectionView = Parse.View.extend({
-        tagName: 'ol',
+        tagName: 'ul',
 
         initialize: function () {
             this.collection.on('add', this.addOne, this);   //при добавлении элемента в коллекцию выполним addOne
             vent.on('deleteDone', this.deleteDone, this);
             vent.on('deleteAll', this.deleteAll, this);
-            vent.on('doneAll', this.doneAll, this);
-            vent.on('login logout', this.toggle, this);
+           // vent.on('doneAll', this.doneAll, this);
+          //  vent.on('login logout', this.toggle, this);
             vent.on('logout', this.erase, this);
-            $('#main').html(this.render().el);
-            this.$el.hide();
+          //  $('#main').html(this.render().el);
+          //  this.$el.hide();
+            this.render();
         },
 
         toggle: function () {
-            this.$el.toggle();
+       //     this.$el.toggle();
         },
 
         erase: function () {
@@ -235,12 +257,7 @@
             this.$el.append(targetView.render().el)
         },
 
-        //отмечаем весь список задач как выполненный (либо наоборот)
-        doneAll: function () {
-            this.collection.each(function (model) {
-                model.save({done: $('#done-all').prop('checked') ? true : false})
-            })
-        },
+
 
         deleteDone: function () {                                   // удаляем выполненные задачи
             _.each(this.collection.getDoneArr(), function (model) {
@@ -261,34 +278,49 @@
 // вьюха добавления задач в список
     App.Views.AddNewTaskView = Parse.View.extend({
         el: '#add-new-task',
+        template: $('#add-task').html(),
+
         events: {
-            'click .add-submit': 'submit'
+            'click .add-submit': 'submit',
+            'click #done-all': 'doneAll'
+        },
+
+        //отмечаем весь список задач как выполненный (либо наоборот)
+        doneAll: function () {
+            this.collection.each(function (model) {
+                model.save({done: $('#done-all').prop('checked') ? true : false})
+            })
         },
 
         initialize: function () {
-            this.$el.hide();
-            vent.on('login logout', this.toggle, this);
+            this.render();
+         //   this.$el.hide();
+           // vent.on('login logout', this.toggle, this);
+        },
+
+        render: function () {
+            this.$el.html(this.template);
+            return this;
         },
 
         toggle: function () {
-            this.$el.toggle();
+         //   this.$el.toggle();
         },
 
         submit: function (e) {
             e.preventDefault();
-            var target = new App.Models.Task();              //???????????????  так можно?
+            var target = new App.Models.Task();
             target.save({
                 title: this.$el.find('.new-task').val(),
                 user: Parse.User.current()
             }, {
                 success: function (model) {
-                    targetsCollection.add(model)                //???????????????? так можно?
-                },
+                    this.collection.add(model);                //???????????????? так можно?
+                }.bind(this),
                 error: function (error) {
                     console.log(error.message)
                 }
             });
-
             this.$el.find('.new-task').val('');
         }
     });
@@ -296,19 +328,28 @@
 //вьюха удаления выполненых задач и очистка списка
     App.Views.ManageTaskView = Parse.View.extend({
         el: '#manage-task',
+
+        template: $('#manage-task-template').html(),
+
         events: {
             'click .delete-done': 'deleteDone',
             'click .delete-all': 'deleteAll',
-            'click #done-all': 'doneAll'
+            'click .change-pic-btn': 'changePicture'
         },
 
         initialize: function () {
-            this.$el.hide();
-            vent.on('login logout', this.toggle, this);
+          //  this.$el.hide();
+           // vent.on('login logout', this.toggle, this);
+            this.render();
+        },
+
+        render: function () {
+            this.$el.html(this.template);
+            return this;
         },
 
         toggle: function () {
-            this.$el.toggle();
+        //    this.$el.toggle();
         },
 
         deleteDone: function () {
@@ -319,51 +360,125 @@
             vent.trigger('deleteAll')
         },
 
-        doneAll: function () {
-            vent.trigger('doneAll')
+changePicture : function(event) {
+    event.preventDefault();
+    if (!navigator.camera) {
+        alert("Camera API not supported", "Error");
+        return;
+    }
+    var options =   {
+        quality: 50,
+        destinationType: Camera.DestinationType.DATA_URL,
+        sourceType: 1,      // 0:Photo Library, 1=Camera, 2=Saved Album
+        encodingType: 0     // 0=JPG 1=PNG
+    };
+
+    navigator.camera.getPicture(
+        function(imgData) {
+            $('#myImage').attr('src', "data:image/jpeg;base64,"+imgData);
+            $('#myImage').css({'display':'block',
+                                'height':'100px'});
+        },
+        function() {
+            alert('Error taking picture', 'Error');
+        },
+        options);
+
+    return false;
+}
+    });
+
+    App.Views.LogOutView = Parse.View.extend({
+        el: '#logout',
+
+        template: $('#logout-template').html(),
+
+        events: {
+            'click .logout-btn': 'logout'
+        },
+
+        render: function () {
+            this.$el.html(this.template);
+            return this;
+        },
+
+        initialize: function(){
+            // this.checkLogIn();                       //выводим имя текущего пользователя
+            this.render()
+        },
+
+        logout: function () {
+            Parse.User.logOut();
+           // vent.trigger('logout');           //генерим событие логаут
+            //this.checkLogIn();
+            console.log('Выход успешен');
+            //  this.clearError();
+        },
+
+        //выводим имя текущего пользователя
+        checkLogIn: function () {
+            var currentUser = Parse.User.current();
+            if (currentUser) {
+                console.log('Current user :' + currentUser.get('username'));
+                $('.current-user').html('User: ' + currentUser.get('username'));
+            }
+            else {
+                $('.current-user').html('');
+                console.log('no current user');
+            }
         }
     });
+
+
 
 //вьюха логина и регистраци
     App.Views.LogInView = Parse.View.extend({
         el: '.reg-forms',
 
+        template: $('#login-template').html(),
+
         events: {
             'click #signup-submit': 'signup',
             'click #login-submit': 'login',
-            'click .logout-btn': 'logout',
+            //'click .logout-btn': 'logout',
             'click #signup-back': 'signupRegToggle',
-            'click .showreg': 'signupRegToggle'
+            'click #showreg': 'signupRegToggle'
+        },
+
+        render: function () {
+            this.$el.html(this.template);
+            return this;
         },
 
         initialize: function () {
-            $('#logout, #signup').hide();
-            vent.on('login logout', this.loginLogoutToggle, this);
-            this.checkCurrentUser();
-            this.checkLogIn();
+            this.render();
+            $('.registration').hide();
+           // vent.on('login logout', this.loginLogoutToggle, this);
+          //  this.checkCurrentUser();                //проверка активного пльзователя если есть генерим событие логин
+           // this.checkLogIn();                       //выводим имя текущего пользователя
         },
 
         signupRegToggle: function () {
             this.clearError();
-            $('#signup, #login').toggle();
+            $('.registration, .autorization').toggle();
         },
 
         loginLogoutToggle: function () {
-            $('#login, #logout').toggle();
+         //   $('#login, #logout').toggle();
         },
 
-        logout: function () {
-            Parse.User.logOut();
-            vent.trigger('logout');           //генерим событие логин
-            this.checkLogIn();
-            console.log('Выход успешен');
-            this.clearError();
-        },
+        //logout: function () {
+        //    Parse.User.logOut();
+        //    vent.trigger('logout');           //генерим событие логаут
+        //   // this.checkLogIn();
+        //    console.log('Выход успешен');
+        //  //  this.clearError();
+        //},
 
         signup: function () {
             this.clearError();
-            var name = $('#signup-username').val();
-            var pass = $('#signup-password').val();
+            var name = $('#login-name').val();
+            var pass = $('#login-password').val();
             var email = $('#signup-email').val();
 
             var user = new Parse.User();
@@ -373,9 +488,12 @@
             user.signUp(null, {
                 success: function (user) {
                     console.log('new user created');
-                    this.checkLogIn();
+
                     alert('Пользователь зарегистрирован!');
                     this.signupRegToggle();
+                    location.hash = 'todomain';
+                    //vent.trigger('login');
+                    //this.checkLogIn();
                 }.bind(this),
                 error: function (user, error) {
                     this.showError(error.message);
@@ -400,54 +518,133 @@
 
             Parse.User.logIn(name, pass, {
                 success: function (user) {
-                    vent.trigger('login');
+                    //vent.trigger('login');
+                    location.hash = 'todomain';
                     console.log('Успешный вход');
-                    this.checkLogIn();
+                 //   this.checkLogIn();
                 }.bind(this),
                 error: function (user, error) {
                     this.showError(error.message);
                 }.bind(this)
             });
+        }
+
+        ////выводим имя текущего пользователя
+        //checkLogIn: function () {
+        //    var currentUser = Parse.User.current();
+        //    if (currentUser) {
+        //        console.log('Current user :' + currentUser.get('username'));
+        //        $('.current-user').html('User: ' + currentUser.get('username'));
+        //    }
+        //    else {
+        //        $('.current-user').html('');
+        //        console.log('no current user');
+        //    }
+        //},
+
+        //checkCurrentUser: function () {
+        //    if (Parse.User.current()) {
+        //        vent.trigger('login');          //генерим событие логин
+        //    }
+        //}
+    });
+
+
+    //вьюха для управления отображением состояний (роутов)
+    App.Views.ManageForRouteView = Parse.View.extend({
+
+        el: ".wrapper",
+
+        initialize: function(){
+            this.loginView = new App.Views.LogInView;
+            this.mainView = new App.Views.TasksCollectionView({collection: targetsCollection});
+            this.logoutView = new App.Views.LogOutView;
+            this.addNewTask = new App.Views.AddNewTaskView({collection: targetsCollection});
+            this.manageTasks = new App.Views.ManageTaskView;
         },
 
-        checkLogIn: function () {
-            var currentUser = Parse.User.current();
-            if (currentUser) {
-                console.log('Current user :' + currentUser.get('username'));
-                $('.current-user').html('User: ' + currentUser.get('username'));
-            }
-            else {
-                $('.current-user').html('');
-                console.log('no current user');
-            }
+        render: function(){
+
         },
 
         checkCurrentUser: function () {
             if (Parse.User.current()) {
-                vent.trigger('login');
+                location.hash = 'todomain';          //генерим событие логин
+            } else {
+                location.hash = 'login';
             }
+        },
+
+        loginShow: function(){
+           // this.$el.empty();
+            this.mainView.$el.detach();
+            this.logoutView.$el.detach();
+            this.addNewTask.$el.detach();
+            this.manageTasks.$el.detach();
+            this.loginView.$el.appendTo(this.$el)
+        },
+
+        registerShow: function(){
+
+        },
+
+        todomainShow: function(){
+            this.loginView.$el.detach();
+            this.$el.find('H2').after(this.addNewTask.$el);
+            this.$el.prepend(this.logoutView.$el);
+            this.logoutView.checkLogIn();
+            this.$el.append(this.manageTasks.$el);
+            this.$el.find('#main').append(this.mainView.$el);
+
+
+
+            //this.logoutView.$el.appendTo(this.$el);
+            //console.log(this.logoutView.el);
+            //console.log(this.el)
+            vent.trigger('login');
+            //this.$el.append(this.logView.render());
         }
     });
 
     App.Routers.Router = Backbone.Router.extend({
         routes: {
-            '': 'index',
-            ':f': 'activateFilter'
+            ''         : 'index',
+            'filter/:f': 'activateFilter',
+            'login'    : 'login',
+            'register' : 'register',
+            'todomain' : 'todomain'
         },
 
         index: function () {
-            console.log('Route HIIIIII')
+            manageForRouteView.checkCurrentUser();
         },
+
+        login: function() {
+            manageForRouteView.loginShow();
+        },
+
+        register: function() {
+            manageForRouteView.registerShow();
+        },
+
+        todomain: function(){
+            manageForRouteView.todomainShow()
+        },
+
         activateFilter: function (f) {
             vent.trigger(f);
         }
     });
 
     var targetsCollection = new App.Collections.TasksCollection;
-    new App.Views.TasksCollectionView({collection: targetsCollection});
-    new App.Views.AddNewTaskView;
-    new App.Views.ManageTaskView;
-    new App.Views.LogInView;
+   // new App.Views.TasksCollectionView({collection: targetsCollection});
+   // new App.Views.AddNewTaskView({collection: targetsCollection});
+   // new App.Views.ManageTaskView;
+    //new App.Views.LogInView;
+    //new App.Views.LogOutView;
+    var manageForRouteView = new App.Views.ManageForRouteView;
     new App.Routers.Router();
     Backbone.history.start();
+
+
 })();
